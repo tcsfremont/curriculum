@@ -9,6 +9,20 @@ class Calculator(Frame):
         Frame.__init__(self, master, *args, **kwargs)
         self.create_elements()
 
+    def appendToDisplay(self, text):
+        self.entryText = self.screen.get()
+        self.textLength = len(self.entryText)
+
+        self.screen.insert(self.textLength, text)
+
+
+    def replaceText(self, text):
+        self.screen.delete(0, END)
+        self.screen.insert(0, text)
+
+    def clearScreen(self):
+        self.replaceText("0")
+
     def create_elements(self):
         """Function to add all the widgets to the calculator window."""
         self.screen = Entry(self, font=("Courier", 16), relief=RAISED,
@@ -17,7 +31,7 @@ class Calculator(Frame):
         self.screen.grid(row=0, column=0, columnspan=5)
 
 #       Top row buttons
-        self.buttonSeven = Button(self, font=("Courier", 11), text="7")
+        self.buttonSeven = Button(self, font=("Courier", 11), text="7", command=lambda: self.appendToDisplay("7"))
         self.buttonSeven.grid(row=1, column=0, sticky=NSEW)
         self.buttonEight = Button(self, font=("Courier", 11), text="8")
         self.buttonEight.grid(row=1, column=1, sticky=NSEW)
@@ -49,7 +63,7 @@ class Calculator(Frame):
 #       Bottom row buttons
         self.buttonZero = Button(self, font=("Courier", 11), text="0")
         self.buttonZero.grid(row=4, column=0, columnspan=2, sticky=NSEW)
-        self.buttonClear = Button(self, font=("Courier", 11), text="C")
+        self.buttonClear = Button(self, font=("Courier", 11), text="C", command= lambda: self.clearScreen())
         self.buttonClear.grid(row=4, column=2, sticky=NSEW)
         self.buttonEqu = Button(self, font=("Courier", 11), text="=")
         self.buttonEqu.grid(row=4, column=3, sticky=NSEW)
