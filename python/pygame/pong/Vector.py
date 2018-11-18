@@ -9,3 +9,6 @@ class Vector:
 
     def __str__(self):
         return "Vector(" + str(self.x) + ", " + str(self.y) + ")"
+
+    def magnitude(self):
+        return (self.x * self.x + self.y * self.y) ** (1 / 2)
