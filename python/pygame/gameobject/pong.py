@@ -35,7 +35,7 @@ def text(string, x, y, font_size=12, color="black", font="consolas"):
 player1score = 0
 player2score = 0
 
-ball = GameObject(width / 2, height / 2, 15, 15, color="yellow")
+ball = GameObject(width / 2, height / 2, 15, 15, color="yellow", image="moon.png")  # Remove the image kwarg to use a plain rectangle
 ball.velocity.x = 5
 
 paddle1 = GameObject(40, height / 2, 15, 120, color="cyan")

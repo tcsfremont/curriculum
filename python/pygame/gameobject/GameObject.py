@@ -8,7 +8,7 @@ class GameObject(pygame.sprite.Sprite):
     A special Pygame Sprite object, useful for making games.
     Inspired by the p5.play Sprite object.
     """
-    def __init__(self, x, y, width, height, color="white"):
+    def __init__(self, x, y, width, height, color="white", image=None):
         pygame.sprite.Sprite.__init__(self)
 
         self.width = width
@@ -16,8 +16,11 @@ class GameObject(pygame.sprite.Sprite):
 
         self.color = pygame.Color(color)
 
-        self.image = pygame.Surface([width, height])
-        self.image.fill(self.color)
+        if image:
+            self.image = pygame.image.load(image)
+        else:
+            self.image = pygame.Surface([width, height])
+            self.image.fill(self.color)
 
         self.position = Vector(x, y)
         self.velocity = Vector(0, 0)
@@ -62,7 +65,7 @@ class GameObject(pygame.sprite.Sprite):
 
     def get_speed(self):
         """
-        :return: The magnitude of the velocity of the sprite.
+        Gets the magnitude of the velocity of the sprite.
         """
 
         return self.velocity.magnitude()
