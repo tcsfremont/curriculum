@@ -7,7 +7,7 @@ One limitation of Pygame is that `Sprite` objects cannot be rotated properly. 90
 ## Other Helpful Pygame Functions
 I added some functions to the top of pong.py, in the template section of the code, which are useful for making games. The `map_range()` function linearly maps a value from one range to another. The `text()` function can easily draw text on the screen; drawing text is a non-trivial task in Pygame, so check out the source code to see how it works.
 ## Games
-So far, pong.py is the only demo. More demos may be added later.
+So far, pong.py is the only complete demo. More demos may be added later.
 ## Pre-reqs
 Coaches who want to teach their students Pygame using the GameObject class should make sure their students have a good understanding of object-oriented programming, including inheritance. I would recommend Coaches go through the GameObject class to see how it works, and I encourage students to add their own features to GameObject for their games.
 ## To Do List
