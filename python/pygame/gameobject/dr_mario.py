@@ -81,9 +81,22 @@ blue_right = get_image(40, 60, 20, 20, sprite_sheet)
 blue_single = get_image(40, 80, 20, 20, sprite_sheet)
 blue_circle = get_image(40, 100, 20, 20, sprite_sheet)
 
+virus_sprite_sheet = pygame.image.load("viruses.png")
+
+red_virus1 = get_image(0, 0, 20, 20, virus_sprite_sheet)
+red_virus2 = get_image(0, 20, 20, 20, virus_sprite_sheet)
+
+yellow_virus1 = get_image(0, 40, 20, 20, virus_sprite_sheet)
+yellow_virus2 = get_image(0, 60, 20, 20, virus_sprite_sheet)
+
+blue_virus1 = get_image(0, 80, 20, 20, virus_sprite_sheet)
+blue_virus2 = get_image(0, 100, 20, 20, virus_sprite_sheet)
+
 background_image = pygame.image.load("background.png")
+
 # Pill area, top left: (240, 200)
 # Pill area, bottom right: (400, 520)
+
 
 class Pill(GameObject):
     def __init__(self, x, y, color1, color2):
@@ -169,6 +182,32 @@ class Pill(GameObject):
         self.image.set_colorkey((0, 0, 0))
 
 
+class Virus(GameObject):
+    def __init__(self, x, y, color):
+        GameObject.__init__(self, x, y, PILL_SIZE, PILL_SIZE)
+
+        self.color = color
+
+        self.frame = 0
+
+        if self.color == "red":
+            self.image = red_virus1
+            self.images = [red_virus1, red_virus2]
+        elif self.color == "yellow":
+            self.image = yellow_virus1
+            self.images = [yellow_virus1, yellow_virus2]
+        else:
+            self.image = blue_virus1
+            self.images = [blue_virus1, blue_virus2]
+
+        self.image.set_colorkey((0, 0, 0))
+
+    def animate(self):
+        self.frame = (self.frame + 1) % 2
+        self.image = self.images[self.frame]
+        self.image.set_colorkey((0, 0, 0))
+
+
 def spawn_pill():
     colors = ["red", "yellow", "blue"]
     color1 = random.choice(colors)
@@ -176,10 +215,21 @@ def spawn_pill():
 
     return Pill(width / 2, 210, color1, color2)
 
+
+def grid_to_screen(row, column):
+    x = 240 + (PILL_SIZE * column) + (PILL_SIZE / 2)
+    y = 200 + (PILL_SIZE * row) + (PILL_SIZE / 2)
+
+    return x, y
+
+
 current_pill = None
 
 all_sprites = pygame.sprite.Group()
-pills_grid = [[None for x in range(8)] for y in range(16)]  # Creats an 8-by-16 grid
+grid = [[None for x in range(8)] for y in range(16)]  # Creates an 8-by-16 grid
+# grid[row][col]
+
+viruses = []
 
 while not game_over:
     # Draw background
@@ -205,8 +255,11 @@ while not game_over:
                 all_sprites.add(current_pill)
 
     # OTHER EVENTS
-    if current_pill and frame % 30 == 0:
-        current_pill.drop()
+    if frame % 30 == 0:
+        if current_pill:
+            current_pill.drop()
+        for virus in viruses:
+            virus.animate()
 
     # KEYBOARD INPUT
     keys_pressed = pygame.key.get_pressed()
