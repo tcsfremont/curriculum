@@ -81,7 +81,7 @@ blue_right = get_image(40, 60, 20, 20, sprite_sheet)
 blue_single = get_image(40, 80, 20, 20, sprite_sheet)
 blue_circle = get_image(40, 100, 20, 20, sprite_sheet)
 
-virus_sprite_sheet = pygame.image.load("viruses.png")
+virus_sprite_sheet = pygame.image.load("viruses_sprites.png")
 
 red_virus1 = get_image(0, 0, 20, 20, virus_sprite_sheet)
 red_virus2 = get_image(0, 20, 20, 20, virus_sprite_sheet)
@@ -223,13 +223,40 @@ def grid_to_screen(row, column):
     return x, y
 
 
+def generate_level(difficulty):
+    prob = map_range(difficulty, 1, 20, 0.1, 0.8)
+    min_depth = int(map_range(difficulty, 1, 20, 10, 2))
+
+    print(prob, min_depth)
+
+    # grid[row][col]
+
+    grid = []
+    viruses = []
+
+    for y in range(16):
+        row = []
+        for x in range(8):
+            if y > min_depth and random.random() < prob:
+                color = random.choice(["red", "yellow", "blue"])
+                virus = Virus(*grid_to_screen(y, x), color)
+
+                row.append(virus)
+                viruses.append(virus)
+            else:
+                row.append(None)
+        grid.append(row)
+
+    return grid, viruses
+
+
 current_pill = None
 
 all_sprites = pygame.sprite.Group()
-grid = [[None for x in range(8)] for y in range(16)]  # Creates an 8-by-16 grid
+grid, viruses = generate_level(20)
 # grid[row][col]
 
-viruses = []
+all_sprites.add(*viruses)
 
 while not game_over:
     # Draw background
