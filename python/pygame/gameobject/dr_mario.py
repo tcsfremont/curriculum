@@ -5,6 +5,7 @@ from Vector import Vector
 from GameObject import GameObject
 
 import random
+import math
 
 pygame.init()
 
@@ -181,6 +182,13 @@ class Pill(GameObject):
 
         self.image.set_colorkey((0, 0, 0))
 
+    def get_state(self):
+        if self.image.get_width() > self.image.get_height():
+            return "horizontal"
+        if self.image.get_width() < self.image.get_height():
+            return "vertical"
+        return "singular"
+
 
 class Virus(GameObject):
     def __init__(self, x, y, color):
@@ -227,8 +235,6 @@ def generate_level(difficulty):
     prob = map_range(difficulty, 1, 20, 0.1, 0.8)
     min_depth = int(map_range(difficulty, 1, 20, 10, 2))
 
-    print(prob, min_depth)
-
     # grid[row][col]
 
     grid = []
@@ -250,13 +256,64 @@ def generate_level(difficulty):
     return grid, viruses
 
 
+def get_color(grid, row, col):
+    spot = grid[row][col]
+
+    if isinstance(spot, Virus):
+        return spot.color
+
+    if isinstance(spot, Pill):
+        x, y = grid_to_screen(row, col)
+        if spot.get_state() == "singular":  # Singular
+            return spot.color1
+        if spot.get_state() == "horizontal":  # Horizontal
+            if x < spot.position.x:
+                return spot.color1
+            return spot.color2
+        # Vertical
+        if y < spot.position.y:
+            return spot.color1
+        return spot.color2
+
+    return None
+
+
+def can_fall(pill, grid):
+    col = (pill.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE
+    row = math.ceil((pill.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE)
+
+    print(row, col)
+
+    if row > 15:
+        return False
+
+    print(pill.get_state())
+
+    if pill.get_state() == "horizontal":
+        left_col = math.floor(col)
+        right_col = math.ceil(col)
+
+        print(left_col, right_col)
+
+        return left_col >= 0 and right_col <= 7 and grid[row + 1][left_col] is None and grid[row + 1][right_col] is None
+
+    return grid[int(row) + 1][int(col)] is None
+
+
 current_pill = None
 
 all_sprites = pygame.sprite.Group()
-grid, viruses = generate_level(20)
+grid, viruses = generate_level(7)
 # grid[row][col]
 
 all_sprites.add(*viruses)
+
+# FOR DEBUGGING
+
+debug = {"red": "R",
+         "yellow" : "Y",
+         "blue": "B",
+         None: " "}
 
 while not game_over:
     # Draw background
@@ -269,9 +326,11 @@ while not game_over:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                pass
+                if current_pill and current_pill.position.x >= 250 + PILL_SIZE:
+                    current_pill.position.x -= PILL_SIZE
             if event.key == pygame.K_RIGHT:
-                pass
+                if current_pill and current_pill.position.x <= 390 - PILL_SIZE:
+                    current_pill.position.x += PILL_SIZE
             if event.key == pygame.K_DOWN:
                 pass
             if event.key == pygame.K_SPACE:
@@ -280,11 +339,22 @@ while not game_over:
             if event.key == pygame.K_s:
                 current_pill = spawn_pill()
                 all_sprites.add(current_pill)
+            if event.key == pygame.K_d:
+                for row in range(16):
+                    print("|", end="")
+                    for col in range(8):
+                        print(debug[get_color(grid, row, col)], end="|")
+                    print()
 
     # OTHER EVENTS
     if frame % 30 == 0:
         if current_pill:
-            current_pill.drop()
+            if can_fall(current_pill, grid):
+                current_pill.drop()
+            else:
+                current_pill = spawn_pill()
+                all_sprites.add(current_pill)
+                print(current_pill.position.y)
         for virus in viruses:
             virus.animate()
 
