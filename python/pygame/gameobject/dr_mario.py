@@ -215,6 +215,12 @@ class Virus(GameObject):
         self.image = self.images[self.frame]
         self.image.set_colorkey((0, 0, 0))
 
+    def __str__(self):
+        return "Virus(%f, %f, %s)" % (self.position.x, self.position.y, self.color)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 def spawn_pill():
     colors = ["red", "yellow", "blue"]
@@ -278,32 +284,145 @@ def get_color(grid, row, col):
     return None
 
 
+def can_move_left(pill, grid):
+    col = math.floor((pill.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE)
+    row = (pill.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE
+
+    if col <= 0:
+        return False
+
+    if pill.get_state() == "vertical":
+        top_row = math.floor(row)
+        bottom_row = math.ceil(row)
+
+        return grid[top_row][col - 1] is None and grid[bottom_row][col - 1] is None
+
+    return grid[int(row)][int(col) - 1] is None
+
+
+def can_move_right(pill, grid):
+    col = math.ceil((pill.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE)
+    row = (pill.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE
+
+    if col >= 7:
+        return False
+
+    if pill.get_state() == "vertical":
+        top_row = math.floor(row)
+        bottom_row = math.ceil(row)
+
+        return grid[top_row][col + 1] is None and grid[bottom_row][col + 1] is None
+
+    return grid[int(row)][int(col) + 1] is None
+
+
 def can_fall(pill, grid):
     col = (pill.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE
     row = math.ceil((pill.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE)
 
-    print(row, col)
-
-    if row > 15:
+    if row >= 15:
         return False
-
-    print(pill.get_state())
 
     if pill.get_state() == "horizontal":
         left_col = math.floor(col)
         right_col = math.ceil(col)
-
-        print(left_col, right_col)
 
         return left_col >= 0 and right_col <= 7 and grid[row + 1][left_col] is None and grid[row + 1][right_col] is None
 
     return grid[int(row) + 1][int(col)] is None
 
 
+def can_rotate(pill, grid):
+    col = (pill.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE
+    row = (pill.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE
+
+    if pill.get_state() == "horizontal":
+        left_col = math.floor(col)
+        row = int(row)
+        if row <= 0:
+            return True
+
+        return grid[row - 1][left_col] is None
+
+    elif pill.get_state() == "vertical":
+        bottom_row = math.ceil(row)
+        col = int(col)
+        if col >= 7:
+            return False
+
+        return grid[bottom_row][col + 1] is None
+
+    return True
+
+
+def add_pill(pill, grid):
+    col = (pill.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE
+    row = (pill.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE
+
+    if pill.get_state() == "horizontal":
+        left_col = math.floor(col)
+        right_col = math.ceil(col)
+
+        row = int(row)
+
+        grid[row][left_col] = pill
+        grid[row][right_col] = pill
+
+    elif pill.get_state() == "vertical":
+        top_row = math.floor(row)
+        bottom_row = math.ceil(row)
+
+        col = int(col)
+
+        grid[top_row][col] = pill
+        grid[bottom_row][col] = pill
+
+    else:
+        grid[int(row)][int(col)] = pill
+
+
+def get_matches(grid):
+    matches = []
+
+    # Check row-by-row (Horizontal matches)
+    for row in range(16):
+        count = 0
+        start_index = 0
+        # end_index = 0
+        matching_color = "red"
+        for col in range(8):
+            current_color = get_color(grid, row, col)
+            if count == 0:
+                matching_color = current_color
+                count += 1
+                start_index = col
+            else:
+                if matching_color == current_color and current_color is not None:
+                    count += 1
+                elif count >= 4:
+                    print("match found")
+                    match = grid[row][start_index:col]
+                    matches.append(match)
+
+                    matching_color = current_color
+                    count = 0
+                    start_index = col
+                else:
+                    matching_color = current_color
+                    count = 0
+                    start_index = col
+        if count >= 4:
+            print("match found")
+            match = grid[row][start_index:8]
+            matches.append(match)
+
+    return matches
+
+
 current_pill = None
 
 all_sprites = pygame.sprite.Group()
-grid, viruses = generate_level(7)
+grid, viruses = generate_level(20)
 # grid[row][col]
 
 all_sprites.add(*viruses)
@@ -314,6 +433,23 @@ debug = {"red": "R",
          "yellow" : "Y",
          "blue": "B",
          None: " "}
+
+grid = [[None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [None, None, None, None, None, None, None, None],
+        [Virus(*grid_to_screen(15, 0), "red"), Virus(*grid_to_screen(15, 0), "red"), Virus(*grid_to_screen(15, 0), "red"), Virus(*grid_to_screen(15, 0), "red"), None, None, None, None]]
 
 while not game_over:
     # Draw background
@@ -326,25 +462,28 @@ while not game_over:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                if current_pill and current_pill.position.x >= 250 + PILL_SIZE:
+                if current_pill and can_move_left(current_pill, grid):
                     current_pill.position.x -= PILL_SIZE
             if event.key == pygame.K_RIGHT:
-                if current_pill and current_pill.position.x <= 390 - PILL_SIZE:
+                if current_pill and can_move_right(current_pill, grid):
                     current_pill.position.x += PILL_SIZE
             if event.key == pygame.K_DOWN:
-                pass
+                if current_pill and can_fall(current_pill, grid):
+                    current_pill.position.y += PILL_SIZE
             if event.key == pygame.K_SPACE:
-                if current_pill:
+                if current_pill and can_rotate(current_pill, grid):
                     current_pill.rotate()
             if event.key == pygame.K_s:
                 current_pill = spawn_pill()
                 all_sprites.add(current_pill)
-            if event.key == pygame.K_d:
+            if event.key == pygame.K_d:  # FOR DEBUGGING
                 for row in range(16):
                     print("|", end="")
                     for col in range(8):
                         print(debug[get_color(grid, row, col)], end="|")
                     print()
+            if event.key == pygame.K_m:
+                print(get_matches(grid))
 
     # OTHER EVENTS
     if frame % 30 == 0:
@@ -352,9 +491,9 @@ while not game_over:
             if can_fall(current_pill, grid):
                 current_pill.drop()
             else:
+                add_pill(current_pill, grid)
                 current_pill = spawn_pill()
                 all_sprites.add(current_pill)
-                print(current_pill.position.y)
         for virus in viruses:
             virus.animate()
 
