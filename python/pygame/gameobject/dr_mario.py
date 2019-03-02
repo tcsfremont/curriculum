@@ -382,38 +382,58 @@ def add_pill(pill, grid):
 
 
 def get_matches(grid):
+    print("Getting matches")
     matches = []
 
     # Check row-by-row (Horizontal matches)
     for row in range(16):
         count = 0
         start_index = 0
-        # end_index = 0
         matching_color = "red"
+
         for col in range(8):
             current_color = get_color(grid, row, col)
-            if count == 0:
-                matching_color = current_color
+            if matching_color == current_color and matching_color is not None:
                 count += 1
+            elif count >= 4:
+                match = grid[row][start_index:col]
+                matches.append(match)
+                count = 1
                 start_index = col
+                matching_color = current_color
             else:
-                if matching_color == current_color and current_color is not None:
-                    count += 1
-                elif count >= 4:
-                    print("match found")
-                    match = grid[row][start_index:col]
-                    matches.append(match)
-
-                    matching_color = current_color
-                    count = 0
-                    start_index = col
-                else:
-                    matching_color = current_color
-                    count = 0
-                    start_index = col
+                count = 1
+                start_index = col
+                matching_color = current_color
         if count >= 4:
-            print("match found")
-            match = grid[row][start_index:8]
+            match = grid[row][start_index:]
+            matches.append(match)
+
+    # Check column-by-column (Vertical matches)
+
+    grid_transpose = [*zip(*grid)]  # https://stackoverflow.com/questions/4937491/matrix-transpose-in-python
+
+    for row in range(8):
+        count = 0
+        start_index = 0
+        matching_color = "red"
+
+        for col in range(16):
+            current_color = get_color(grid_transpose, row, col)
+            if matching_color == current_color and matching_color is not None:
+                count += 1
+            elif count >= 4:
+                match = grid_transpose[row][start_index:col]
+                matches.append(match)
+                count = 1
+                start_index = col
+                matching_color = current_color
+            else:
+                count = 1
+                start_index = col
+                matching_color = current_color
+        if count >= 4:
+            match = grid_transpose[row][start_index:]
             matches.append(match)
 
     return matches
@@ -433,23 +453,6 @@ debug = {"red": "R",
          "yellow" : "Y",
          "blue": "B",
          None: " "}
-
-grid = [[None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [None, None, None, None, None, None, None, None],
-        [Virus(*grid_to_screen(15, 0), "red"), Virus(*grid_to_screen(15, 0), "red"), Virus(*grid_to_screen(15, 0), "red"), Virus(*grid_to_screen(15, 0), "red"), None, None, None, None]]
 
 while not game_over:
     # Draw background
@@ -483,7 +486,15 @@ while not game_over:
                         print(debug[get_color(grid, row, col)], end="|")
                     print()
             if event.key == pygame.K_m:
-                print(get_matches(grid))
+                for match in get_matches(grid):
+                    for thing in match:
+                        col = (thing.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE
+                        row = (thing.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE
+
+                        col, row = int(col), int(row)
+
+                        print("%s (%d, %d), " % (thing.color, row, col), end="")
+                    print()
 
     # OTHER EVENTS
     if frame % 30 == 0:
@@ -492,8 +503,14 @@ while not game_over:
                 current_pill.drop()
             else:
                 add_pill(current_pill, grid)
-                current_pill = spawn_pill()
-                all_sprites.add(current_pill)
+
+                matches = get_matches(grid)
+                print(matches)
+
+                all_sprites.remove(*matches)
+
+                # current_pill = spawn_pill()
+                # all_sprites.add(current_pill)
         for virus in viruses:
             virus.animate()
 
