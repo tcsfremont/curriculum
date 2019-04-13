@@ -100,32 +100,48 @@ background_image = pygame.image.load("background.png")
 
 
 class Pill(GameObject):
-    def __init__(self, x, y, color1, color2):
+    def __init__(self, x, y, color1, color2, singular=False):
         self.color1 = color1
         self.color2 = color2
 
         # Construct the image
-        if color1 == "red":
-            self.left_image = red_left
-        elif color1 == "yellow":
-            self.left_image = yellow_left
+
+        if singular:
+            if color1 == "red":
+                image = red_single
+            elif color1 == "yellow":
+                image = yellow_single
+            else:
+                image = blue_single
+            image.set_colorkey((0, 0, 0))
+            GameObject.__init__(self, x, y, PILL_SIZE, PILL_SIZE)
+            self.image = image
+
+            self.left_image = self.image
+            self.right_image = self.image
+
         else:
-            self.left_image = blue_left
+            if color1 == "red":
+                self.left_image = red_left
+            elif color1 == "yellow":
+                self.left_image = yellow_left
+            else:
+                self.left_image = blue_left
 
-        if color2 == "red":
-            self.right_image = red_right
-        elif color2 == "yellow":
-            self.right_image = yellow_right
-        else:
-            self.right_image = blue_right
+            if color2 == "red":
+                self.right_image = red_right
+            elif color2 == "yellow":
+                self.right_image = yellow_right
+            else:
+                self.right_image = blue_right
 
-        image = pygame.Surface((PILL_SIZE * 2, PILL_SIZE))
-        image.blit(self.left_image, (0, 0), (0, 0, 20, 20))
-        image.blit(self.right_image, (20, 0), (0, 0, 20, 20))
-        image.set_colorkey((0, 0, 0))
+            image = pygame.Surface((PILL_SIZE * 2, PILL_SIZE))
+            image.blit(self.left_image, (0, 0), (0, 0, 20, 20))
+            image.blit(self.right_image, (20, 0), (0, 0, 20, 20))
+            image.set_colorkey((0, 0, 0))
 
-        GameObject.__init__(self, x, y, PILL_SIZE * 2, PILL_SIZE)
-        self.image = image
+            GameObject.__init__(self, x, y, PILL_SIZE * 2, PILL_SIZE)
+            self.image = image
 
     def drop(self):
         self.position.y += PILL_SIZE
@@ -278,8 +294,8 @@ def get_color(grid, row, col):
             return spot.color2
         # Vertical
         if y < spot.position.y:
-            return spot.color1
-        return spot.color2
+            return spot.color2
+        return spot.color1
 
     return None
 
@@ -396,7 +412,7 @@ def get_matches(grid):
             if matching_color == current_color and matching_color is not None:
                 count += 1
             elif count >= 4:
-                match = grid[row][start_index:col]
+                match = [[grid[row][c], row, c, "row"] for c in range(start_index, col)]
                 matches.append(match)
                 count = 1
                 start_index = col
@@ -406,43 +422,62 @@ def get_matches(grid):
                 start_index = col
                 matching_color = current_color
         if count >= 4:
-            match = grid[row][start_index:]
+            match = [[grid[row][c], row, c, "row"] for c in range(start_index, 8)]
             matches.append(match)
 
     # Check column-by-column (Vertical matches)
-
-    grid_transpose = [*zip(*grid)]  # https://stackoverflow.com/questions/4937491/matrix-transpose-in-python
-
-    for row in range(8):
+    for col in range(8):
         count = 0
         start_index = 0
         matching_color = "red"
 
-        for col in range(16):
-            current_color = get_color(grid_transpose, row, col)
+        for row in range(16):
+            current_color = get_color(grid, row, col)
             if matching_color == current_color and matching_color is not None:
                 count += 1
             elif count >= 4:
-                match = grid_transpose[row][start_index:col]
+                match = [[grid[r][col], r, col, "col"] for r in range(start_index, row)]
                 matches.append(match)
                 count = 1
-                start_index = col
+                start_index = row
                 matching_color = current_color
             else:
                 count = 1
-                start_index = col
+                start_index = row
                 matching_color = current_color
         if count >= 4:
-            match = grid_transpose[row][start_index:]
+            match = [[grid[r][col], r, col, "col"] for r in range(start_index, 16)]
             matches.append(match)
 
     return matches
 
 
+def remove_match(match, grid):
+    # match = [thing, row, col, type]
+    for thing, row, col, orientation in match:
+        x, y = grid_to_screen(row, col)
+
+        all_sprites.remove(thing)
+        grid[row][col] = None
+
+        if type(thing) == Virus or thing.get_state() == "singular":
+            continue
+
+        if thing.get_state() == "horizontal":
+            if orientation == "col":
+                if x < thing.position.x:
+                    new_pill = Pill(x + PILL_SIZE, y, thing.color2, thing.color2, singular=True)
+                else:
+                    new_pill = Pill(x - PILL_SIZE, y, thing.color1, thing.color1, singular=True)
+                all_sprites.add(new_pill)
+
+
+
+
 current_pill = None
 
 all_sprites = pygame.sprite.Group()
-grid, viruses = generate_level(20)
+grid, viruses = generate_level(5)
 # grid[row][col]
 
 all_sprites.add(*viruses)
@@ -450,7 +485,7 @@ all_sprites.add(*viruses)
 # FOR DEBUGGING
 
 debug = {"red": "R",
-         "yellow" : "Y",
+         "yellow": "Y",
          "blue": "B",
          None: " "}
 
@@ -486,15 +521,10 @@ while not game_over:
                         print(debug[get_color(grid, row, col)], end="|")
                     print()
             if event.key == pygame.K_m:
-                for match in get_matches(grid):
-                    for thing in match:
-                        col = (thing.position.x - 240 - (PILL_SIZE / 2)) / PILL_SIZE
-                        row = (thing.position.y - 200 - (PILL_SIZE / 2)) / PILL_SIZE
-
-                        col, row = int(col), int(row)
-
-                        print("%s (%d, %d), " % (thing.color, row, col), end="")
-                    print()
+                matches = get_matches(grid)
+                print(matches)
+                for match in matches:
+                    remove_match(match, grid)
 
     # OTHER EVENTS
     if frame % 30 == 0:
@@ -503,11 +533,11 @@ while not game_over:
                 current_pill.drop()
             else:
                 add_pill(current_pill, grid)
+                current_pill = None
+                # matches = get_matches(grid)
+                # print(matches)
 
-                matches = get_matches(grid)
-                print(matches)
-
-                all_sprites.remove(*matches)
+                # all_sprites.remove(*matches)
 
                 # current_pill = spawn_pill()
                 # all_sprites.add(current_pill)
